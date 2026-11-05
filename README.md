@@ -16,7 +16,7 @@ separate read and write speeds, and stays out of the way.
 
 ## Features
 
-- External drives by volume name ("Mini SSD", not "M.2 P320 512GB"), with read and write
+- External drives by volume name ("Work SSD", not "M.2 P320 512GB"), with read and write
   MB/s and a 60 second chart per drive. Drives appear and disappear as you plug them in.
 - Memory as Activity Monitor counts it (app, wired, compressed), with the menu bar value
   turning amber or red when macOS reports memory pressure. Cached files and swap listed.
