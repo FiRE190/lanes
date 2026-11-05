@@ -1,0 +1,71 @@
+import AppKit
+import SwiftUI
+import Combine
+
+// Plain AppKit entry point: no SwiftUI App scene, so no stray windows and SwiftUI is only
+// loaded when the panel is opened.
+let appDelegate = MainActor.assumeIsolated { AppDelegate() }
+NSApplication.shared.delegate = appDelegate
+_ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+
+/// Owns the menu bar item and the popover that hangs from it. The popover's SwiftUI content
+/// is created when it opens and thrown away when it closes, so a closed Lanes keeps no view
+/// tree in memory and does no layout work. Only the small icon is updated.
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+    private let monitor = Monitor()
+    private var statusItem: NSStatusItem?
+    private let popover = NSPopover()
+    private var cancellables = Set<AnyCancellable>()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Menu bar only: no Dock icon.
+        NSApplication.shared.setActivationPolicy(.accessory)
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = item.button {
+            button.target = self
+            button.action = #selector(togglePopover(_:))
+            button.imagePosition = .imageOnly
+        }
+        statusItem = item
+        updateIcon()
+
+        popover.behavior = .transient   // closes when you click elsewhere
+        popover.delegate = self
+
+        // One state publish per tick -> one icon check. The icon image is cached, so this is
+        // a string comparison unless a number actually changed.
+        monitor.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateIcon() }
+            .store(in: &cancellables)
+        monitor.settings.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in self?.updateIcon() }
+            .store(in: &cancellables)
+    }
+
+    private func updateIcon() {
+        guard let button = statusItem?.button else { return }
+        let image = IconRenderer.image(cells: monitor.iconCells())
+        if button.image !== image { button.image = image }
+    }
+
+    @objc private func togglePopover(_ sender: Any?) {
+        guard let button = statusItem?.button else { return }
+        if popover.isShown {
+            popover.performClose(sender)
+        } else {
+            let host = NSHostingController(rootView: PanelView(monitor: monitor))
+            host.sizingOptions = [.preferredContentSize]   // popover follows the content's size
+            popover.contentViewController = host
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        }
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popover.contentViewController = nil   // frees the SwiftUI view tree
+    }
+}
