@@ -90,8 +90,14 @@ enum IconRenderer {
             (value as NSString).draw(at: NSPoint(x: x + (width - s.width) / 2, y: label.isEmpty ? 4 : 1),
                                      withAttributes: valueAttrs)
         case .twoRows(let top, let bottom):
-            rowString(top, textColor: cell.color).draw(at: NSPoint(x: x, y: 11.5))
-            rowString(bottom, textColor: cell.color).draw(at: NSPoint(x: x, y: 0.5))
+            // Centre the ink inside the reserved width, so the icon's visual middle matches its
+            // geometric middle (and the popover arrow) even when the numbers are short.
+            let topString = rowString(top, textColor: cell.color)
+            let bottomString = rowString(bottom, textColor: cell.color)
+            let inkWidth = max(topString.size().width, bottomString.size().width)
+            let inset = max(0, (width - inkWidth) / 2)
+            topString.draw(at: NSPoint(x: x + inset, y: 11.5))
+            bottomString.draw(at: NSPoint(x: x + inset, y: 0.5))
         }
     }
 

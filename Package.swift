@@ -38,6 +38,10 @@ let package = Package(
             name: "SystemMonitorApp",
             dependencies: ["SystemMonitorCore"]
         ),
+        .testTarget(
+            name: "SystemMonitorCoreTests",
+            dependencies: ["SystemMonitorCore"]
+        ),
     ],
     swiftLanguageModes: [.v5]
 )

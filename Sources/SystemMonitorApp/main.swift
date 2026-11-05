@@ -61,7 +61,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             host.sizingOptions = [.preferredContentSize]   // popover follows the content's size
             popover.contentViewController = host
             NSApplication.shared.activate(ignoringOtherApps: true)
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            // Anchor on the drawn icon itself, centred inside the button, so the arrow points
+            // at the middle of the icon whatever padding AppKit adds around it.
+            let iconWidth = button.image?.size.width ?? button.bounds.width
+            let anchor = NSRect(x: (button.bounds.width - iconWidth) / 2, y: 0,
+                                width: iconWidth, height: button.bounds.height)
+            if ProcessInfo.processInfo.environment["LANES_DEBUG"] != nil {
+                FileHandle.standardError.write(
+                    "button \(button.bounds) image \(button.image?.size ?? .zero) anchor \(anchor) alignmentRect \(button.alignmentRectInsets)\n"
+                        .data(using: .utf8)!)
+            }
+            popover.show(relativeTo: anchor, of: button, preferredEdge: .minY)
         }
     }
 
