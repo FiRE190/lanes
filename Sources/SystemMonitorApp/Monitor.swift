@@ -30,11 +30,18 @@ final class Monitor: ObservableObject {
 
     nonisolated static let historyLength = 60
 
-    private let sampler: Sampler
+    private let sampler: Sampler?
     private var cancellables = Set<AnyCancellable>()
 
+    /// Demo mode: fixed data, no sampling. Used to render README pictures.
+    init(demo: MonitorState) {
+        sampler = nil
+        state = demo
+    }
+
     init() {
-        sampler = Sampler()
+        let sampler = Sampler()
+        self.sampler = sampler
         sampler.onSample = { [weak self] state in
             DispatchQueue.main.async { self?.state = state }
         }
@@ -51,7 +58,7 @@ final class Monitor: ObservableObject {
     }
 
     private func applySettings() {
-        sampler.configure(shown: settings.menuBarItems.union(settings.panelItems),
+        sampler?.configure(shown: settings.menuBarItems.union(settings.panelItems),
                           interval: settings.updateInterval)
     }
 

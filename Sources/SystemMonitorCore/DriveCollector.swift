@@ -11,6 +11,15 @@ public struct DriveRate: Equatable {
     public let readBytesPerSec: Double
     public let writeBytesPerSec: Double
 
+    public init(bsdName: String, label: String, model: String, isInternal: Bool, readBytesPerSec: Double, writeBytesPerSec: Double) {
+        self.bsdName = bsdName
+        self.label = label
+        self.model = model
+        self.isInternal = isInternal
+        self.readBytesPerSec = readBytesPerSec
+        self.writeBytesPerSec = writeBytesPerSec
+    }
+
     public var readMBps: Double { readBytesPerSec / 1_000_000 }
     public var writeMBps: Double { writeBytesPerSec / 1_000_000 }
 }

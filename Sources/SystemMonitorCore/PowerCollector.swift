@@ -6,6 +6,11 @@ public struct PowerSnapshot: Equatable {
     public let systemWatts: Double?
     /// GPU power in watts (IOReport energy counters). nil if not exposed.
     public let gpuWatts: Double?
+
+    public init(systemWatts: Double?, gpuWatts: Double?) {
+        self.systemWatts = systemWatts
+        self.gpuWatts = gpuWatts
+    }
 }
 
 /// Power draw without admin rights: SMC for the system total, IOReport for the GPU.

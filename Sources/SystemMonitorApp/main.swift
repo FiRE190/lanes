@@ -4,6 +4,12 @@ import Combine
 
 // Plain AppKit entry point: no SwiftUI App scene, so no stray windows and SwiftUI is only
 // loaded when the panel is opened.
+// Hidden mode for the README: render the UI with demo data to PNG files and exit.
+if let dir = ProcessInfo.processInfo.environment["LANES_SCREENSHOT_DIR"] {
+    MainActor.assumeIsolated { ScreenshotMode.run(outputDir: dir) }
+    exit(0)
+}
+
 let appDelegate = MainActor.assumeIsolated { AppDelegate() }
 NSApplication.shared.delegate = appDelegate
 _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)

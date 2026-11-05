@@ -6,7 +6,12 @@ Lanes shows how much memory is in use and how fast your external drives are read
 writing, right in the menu bar. Click it for a panel with charts. It uses about 14 MB of
 memory and 0.2% CPU while idle.
 
-<!-- screenshot: docs/screenshot.png (menu bar icon + open panel) -->
+<p align="center">
+  <img src="docs/menubar.png" width="310" alt="Lanes in the menu bar: memory and external drive read/write speed"><br>
+  <img src="docs/panel.png" width="340" alt="The Lanes panel: memory, external drives, internal disk, power, CPU and GPU">
+</p>
+
+Pictures are rendered by the app from demo data (`scripts/make-screenshots.sh`).
 
 ## Why
 

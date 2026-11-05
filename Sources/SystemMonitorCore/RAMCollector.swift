@@ -16,6 +16,16 @@ public struct RAMSnapshot {
     public let swapUsedBytes: UInt64
     public let pressure: MemoryPressure
 
+    public init(appBytes: UInt64, wiredBytes: UInt64, compressedBytes: UInt64, cachedBytes: UInt64, totalBytes: UInt64, swapUsedBytes: UInt64, pressure: MemoryPressure) {
+        self.appBytes = appBytes
+        self.wiredBytes = wiredBytes
+        self.compressedBytes = compressedBytes
+        self.cachedBytes = cachedBytes
+        self.totalBytes = totalBytes
+        self.swapUsedBytes = swapUsedBytes
+        self.pressure = pressure
+    }
+
     /// Used the way Activity Monitor counts it: app + wired + compressed.
     public var usedBytes: UInt64 { appBytes + wiredBytes + compressedBytes }
 
