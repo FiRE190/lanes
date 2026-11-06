@@ -80,6 +80,23 @@ swift run drivemon --internal # include the internal disk
 swift run powermon            # every power reading this Mac exposes
 ```
 
+## Accuracy
+
+Lanes is meant to agree with Activity Monitor, not just be close. "Memory Used" follows
+Activity Monitor's definition (physical memory minus free minus file-backed cache, verified
+against it to 0.03%), and the displayed CPU and drive figures are averaged over the same
+5 second window Activity Monitor uses, so the two agree to within a point. You can check on
+your own Mac:
+
+```sh
+swift run lanes-verify 10     # 10 s window; copy a large file meanwhile to exercise the disks
+```
+
+It samples Lanes' own collectors and, over the same window, `vm_stat`, `top` and `iostat`,
+then prints each value next to its reference with the error. It exits non-zero if anything
+is off by more than 1%. GPU and power have no root-free reference; `sudo powermetrics` is the
+only cross-check for those.
+
 ## Uninstall
 
 Quit Lanes from its panel, delete `Lanes.app` from Applications, and optionally remove the
