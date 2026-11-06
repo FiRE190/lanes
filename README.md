@@ -48,7 +48,7 @@ Lanes lives in the menu bar and has no Dock icon. Quit it from its panel.
 Needs Xcode 15 or newer (for the Swift toolchain).
 
 ```sh
-git clone https://github.com/FiRE190/lanes.git
+git clone https://github.com/jonathanbrantner/lanes.git
 cd lanes
 scripts/install.sh
 ```
