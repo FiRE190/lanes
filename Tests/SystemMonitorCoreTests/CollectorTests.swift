@@ -14,7 +14,12 @@ final class CollectorTests: XCTestCase {
         XCTAssertEqual(s.totalBytes, ProcessInfo.processInfo.physicalMemory)
         XCTAssertGreaterThan(s.usedBytes, 0)
         XCTAssertLessThanOrEqual(s.usedBytes, s.totalBytes)
-        XCTAssertEqual(s.usedBytes, s.appBytes + s.wiredBytes + s.compressedBytes)
+        // Activity Monitor's definition: total minus free minus file-backed cache, but never
+        // below the sum of the parts (CI virtual machines under-report physical memory).
+        let parts = s.appBytes + s.wiredBytes + s.compressedBytes
+        XCTAssertEqual(s.usedBytes, max(s.totalBytes - s.freeBytes - s.fileBackedBytes, parts))
+        XCTAssertGreaterThanOrEqual(s.usedBytes, parts)
+        XCTAssertEqual(s.usedBytes, s.appBytes + s.wiredBytes + s.compressedBytes + s.otherBytes)
         XCTAssertTrue((0...1).contains(s.usedFraction))
         XCTAssertTrue([.normal, .warning, .critical].contains(s.pressure))
     }

@@ -8,6 +8,7 @@ let package = Package(
         .library(name: "SystemMonitorCore", targets: ["SystemMonitorCore"]),
         .executable(name: "drivemon", targets: ["drivemon"]),
         .executable(name: "SystemMonitorApp", targets: ["SystemMonitorApp"]),
+        .executable(name: "lanes-verify", targets: ["verify"]),
     ],
     targets: [
         .target(
@@ -36,6 +37,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "SystemMonitorApp",
+            dependencies: ["SystemMonitorCore"]
+        ),
+        .executableTarget(
+            name: "verify",
             dependencies: ["SystemMonitorCore"]
         ),
         .testTarget(

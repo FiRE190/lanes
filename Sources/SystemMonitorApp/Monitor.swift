@@ -30,11 +30,18 @@ final class Monitor: ObservableObject {
 
     nonisolated static let historyLength = 60
 
-    private let sampler: Sampler
+    private let sampler: Sampler?
     private var cancellables = Set<AnyCancellable>()
 
+    /// Demo mode: fixed data, no sampling. Used to render README pictures.
+    init(demo: MonitorState) {
+        sampler = nil
+        state = demo
+    }
+
     init() {
-        sampler = Sampler()
+        let sampler = Sampler()
+        self.sampler = sampler
         sampler.onSample = { [weak self] state in
             DispatchQueue.main.async { self?.state = state }
         }
@@ -51,7 +58,7 @@ final class Monitor: ObservableObject {
     }
 
     private func applySettings() {
-        sampler.configure(shown: settings.menuBarItems.union(settings.panelItems),
+        sampler?.configure(shown: settings.menuBarItems.union(settings.panelItems),
                           interval: settings.updateInterval)
     }
 
@@ -133,8 +140,10 @@ private final class Sampler {
             push(&state.ramHistory, state.ram?.usedFraction)
         }
         if shown.contains(.cpu) {
-            state.cpu = cpu.usage() ?? state.cpu
-            push(&state.cpuHistory, state.cpu)
+            // Raw 1-tick sample feeds the chart; the displayed value is averaged over the
+            // same 5 s window Activity Monitor uses, so the two numbers agree.
+            if let sample = cpu.usage() { push(&state.cpuHistory, sample) }
+            state.cpu = mean(state.cpuHistory.suffix(displayWindow))
         }
         if shown.contains(.gpu) {
             state.gpu = gpu.utilization()
@@ -158,7 +167,22 @@ private final class Sampler {
         }
         state.driveHistory = next   // drops drives that were ejected
 
+        // Displayed MB/s = mean over the 5 s window; the per-tick samples stay in the chart.
+        state.allDrives = rates.map { r in
+            let h = next[r.bsdName]?.suffix(displayWindow) ?? []
+            return DriveRate(bsdName: r.bsdName, label: r.label, model: r.model, isInternal: r.isInternal,
+                             readBytesPerSec: (mean(h.map(\.read)) ?? r.readMBps) * 1_000_000,
+                             writeBytesPerSec: (mean(h.map(\.write)) ?? r.writeMBps) * 1_000_000)
+        }
+
         onSample?(state)
+    }
+
+    /// Number of ticks that make up Activity Monitor's default 5 second averaging window.
+    private var displayWindow: Int { max(1, Int((5.0 / interval).rounded())) }
+
+    private func mean<C: Collection>(_ values: C) -> Double? where C.Element == Double {
+        values.isEmpty ? nil : values.reduce(0, +) / Double(values.count)
     }
 
     private func push(_ history: inout [Double], _ value: Double?) {

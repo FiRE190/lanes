@@ -1,0 +1,101 @@
+import AppKit
+import SwiftUI
+import SystemMonitorCore
+
+/// Renders the menu bar icon and the panel with made-up demo data to PNG files, at 2x.
+/// Run with `LANES_SCREENSHOT_DIR=docs` (see scripts/make-screenshots.sh). Nothing here reads
+/// the real system, so the pictures never contain the machine's own data.
+@MainActor
+enum ScreenshotMode {
+    static func run(outputDir: String) {
+        _ = NSApplication.shared
+        try? FileManager.default.createDirectory(atPath: outputDir, withIntermediateDirectories: true)
+
+        let monitor = Monitor(demo: demoState())
+        monitor.settings.menuBarItems = [.memory, .drives]
+        monitor.settings.panelItems = [.memory, .drives, .disk, .power, .cpu, .gpu]
+        monitor.settings.hiddenDrives = []
+
+        // Menu bar strip: the icon on a dark menu-bar-like background.
+        let icon = IconRenderer.image(cells: monitor.iconCells())
+        let strip = NSImage(size: NSSize(width: icon.size.width + 32, height: 24), flipped: false) { rect in
+            NSColor(calibratedRed: 0.11, green: 0.11, blue: 0.13, alpha: 1).setFill()
+            NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
+            icon.draw(at: NSPoint(x: 16, y: 1), from: .zero, operation: .sourceOver, fraction: 1)
+            return true
+        }
+        write(strip, scale: 2, to: "\(outputDir)/menubar.png")
+
+        // Panel: the real SwiftUI view on a rounded dark card, like the popover.
+        let card = PanelView(monitor: monitor)
+            .background(Color(nsColor: NSColor(calibratedRed: 0.13, green: 0.13, blue: 0.16, alpha: 1)))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(12)
+        let host = NSHostingView(rootView: card)
+        host.frame = NSRect(origin: .zero, size: host.fittingSize)
+        let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        write(view: host, scale: 2, to: "\(outputDir)/panel.png")
+    }
+
+    private static func demoState() -> MonitorState {
+        func curve(_ n: Int, _ f: (Double) -> Double) -> [Double] { (0..<n).map { f(Double($0) / Double(n - 1)) } }
+        let gb = 1_073_741_824.0
+        var s = MonitorState()
+        s.ram = RAMSnapshot(appBytes: UInt64(9.9 * gb), wiredBytes: UInt64(2.7 * gb),
+                            compressedBytes: UInt64(3.5 * gb), cachedBytes: UInt64(6.0 * gb),
+                            totalBytes: UInt64(24 * gb), swapUsedBytes: UInt64(0.7 * gb), pressure: .normal,
+                            freeBytes: UInt64(1.5 * gb), fileBackedBytes: UInt64(5.6 * gb))
+        s.ramHistory = curve(60) { 0.62 + 0.05 * sin($0 * 9) + 0.03 * $0 }
+        s.cpu = 0.14
+        s.cpuHistory = curve(60) { 0.10 + 0.08 * abs(sin($0 * 14)) + ($0 > 0.7 ? 0.25 * sin(($0 - 0.7) * 10) : 0) }
+        s.gpu = 0.06
+        s.gpuHistory = curve(60) { 0.02 + 0.05 * max(0, sin($0 * 20)) }
+        s.power = PowerSnapshot(systemWatts: 9.8, gpuWatts: 0.12)
+        s.powerHistory = curve(60) { 7 + 2 * abs(sin($0 * 6)) + ($0 > 0.75 ? 9 * sin(($0 - 0.75) * 12) : 0) }
+        let ssd = DriveRate(bsdName: "disk4", label: "Work SSD", model: "Demo SSD", isInternal: false,
+                            readBytesPerSec: 412e6, writeBytesPerSec: 186e6)
+        let internalDisk = DriveRate(bsdName: "disk0", label: "Internal SSD", model: "Demo", isInternal: true,
+                                     readBytesPerSec: 3.1e6, writeBytesPerSec: 1.4e6)
+        s.allDrives = [internalDisk, ssd]
+        s.driveHistory = [
+            "disk4": (0..<60).map { i in
+                let t = Double(i) / 59
+                let copy = t > 0.45 ? 1.0 : 0.0
+                return DriveSample(read: copy * (380 + 60 * sin(t * 25)) + 3 * abs(sin(t * 40)),
+                                   write: copy * (170 + 40 * sin(t * 18 + 1)) + 2 * abs(sin(t * 33)))
+            },
+            "disk0": (0..<60).map { i in
+                let t = Double(i) / 59
+                return DriveSample(read: 2 + 6 * max(0, sin(t * 30)), write: 1 + 4 * max(0, sin(t * 22 + 2)))
+            },
+        ]
+        return s
+    }
+
+    private static func write(view: NSView, scale: CGFloat, to path: String) {
+        let scaled = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                      pixelsWide: Int(view.bounds.width * scale),
+                                      pixelsHigh: Int(view.bounds.height * scale),
+                                      bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                      colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        scaled.size = view.bounds.size
+        view.cacheDisplay(in: view.bounds, to: scaled)
+        try? scaled.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+    }
+
+    private static func write(_ image: NSImage, scale: CGFloat, to path: String) {
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                   pixelsWide: Int(image.size.width * scale),
+                                   pixelsHigh: Int(image.size.height * scale),
+                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        rep.size = image.size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        image.draw(in: NSRect(origin: .zero, size: image.size))
+        NSGraphicsContext.restoreGraphicsState()
+        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+    }
+}

@@ -293,7 +293,7 @@ struct HistoryChart: View {
     }
 }
 
-/// Stacked bar of what counts as used: app, wired, compressed. The empty part is free or reclaimable.
+/// Stacked bar of what counts as used: app, wired, compressed, and other (grey). Adds up to the headline.
 struct MemoryBar: View {
     let ram: RAMSnapshot
 
@@ -304,6 +304,7 @@ struct MemoryBar: View {
                 segment(Double(ram.appBytes), total, geo.size.width, .blue)
                 segment(Double(ram.wiredBytes), total, geo.size.width, .orange)
                 segment(Double(ram.compressedBytes), total, geo.size.width, .purple)
+                segment(Double(ram.otherBytes), total, geo.size.width, .gray.opacity(0.7))
                 Spacer(minLength: 0)
             }
             .background(Color.primary.opacity(0.08))
