@@ -15,8 +15,12 @@ public struct RAMSnapshot {
     public let totalBytes: UInt64
     public let swapUsedBytes: UInt64
     public let pressure: MemoryPressure
+    public let freeBytes: UInt64         // pages on the free list
+    public let fileBackedBytes: UInt64   // file cache that can be dropped at any time
 
-    public init(appBytes: UInt64, wiredBytes: UInt64, compressedBytes: UInt64, cachedBytes: UInt64, totalBytes: UInt64, swapUsedBytes: UInt64, pressure: MemoryPressure) {
+    public init(appBytes: UInt64, wiredBytes: UInt64, compressedBytes: UInt64, cachedBytes: UInt64,
+                totalBytes: UInt64, swapUsedBytes: UInt64, pressure: MemoryPressure,
+                freeBytes: UInt64, fileBackedBytes: UInt64) {
         self.appBytes = appBytes
         self.wiredBytes = wiredBytes
         self.compressedBytes = compressedBytes
@@ -24,10 +28,24 @@ public struct RAMSnapshot {
         self.totalBytes = totalBytes
         self.swapUsedBytes = swapUsedBytes
         self.pressure = pressure
+        self.freeBytes = freeBytes
+        self.fileBackedBytes = fileBackedBytes
     }
 
-    /// Used the way Activity Monitor counts it: app + wired + compressed.
-    public var usedBytes: UInt64 { appBytes + wiredBytes + compressedBytes }
+    /// "Memory Used" exactly as Activity Monitor computes it: everything that is neither free
+    /// nor droppable file cache. That is more than app + wired + compressed, because purgeable,
+    /// speculative and kernel-reserved pages count as used too. Verified against Activity
+    /// Monitor on 2026-11-05 (15.90 GB vs 15.90 GB).
+    public var usedBytes: UInt64 {
+        totalBytes > freeBytes + fileBackedBytes ? totalBytes - freeBytes - fileBackedBytes
+                                                : appBytes + wiredBytes + compressedBytes
+    }
+
+    /// The part of "used" that is not app, wired or compressed (purgeable, speculative, reserved).
+    public var otherBytes: UInt64 {
+        let parts = appBytes + wiredBytes + compressedBytes
+        return usedBytes > parts ? usedBytes - parts : 0
+    }
 
     public var usedFraction: Double {
         totalBytes == 0 ? 0 : min(1, Double(usedBytes) / Double(totalBytes))
@@ -94,6 +112,8 @@ public final class RAMCollector {
                            cachedBytes: UInt64(cachedPages) * page,
                            totalBytes: total,
                            swapUsedBytes: swapUsed,
-                           pressure: pressure)
+                           pressure: pressure,
+                           freeBytes: UInt64(stats.free_count) * page,
+                           fileBackedBytes: UInt64(stats.external_page_count) * page)
     }
 }

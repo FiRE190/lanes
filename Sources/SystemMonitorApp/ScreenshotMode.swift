@@ -45,7 +45,8 @@ enum ScreenshotMode {
         var s = MonitorState()
         s.ram = RAMSnapshot(appBytes: UInt64(9.9 * gb), wiredBytes: UInt64(2.7 * gb),
                             compressedBytes: UInt64(3.5 * gb), cachedBytes: UInt64(6.0 * gb),
-                            totalBytes: UInt64(24 * gb), swapUsedBytes: UInt64(0.7 * gb), pressure: .normal)
+                            totalBytes: UInt64(24 * gb), swapUsedBytes: UInt64(0.7 * gb), pressure: .normal,
+                            freeBytes: UInt64(1.5 * gb), fileBackedBytes: UInt64(5.6 * gb))
         s.ramHistory = curve(60) { 0.62 + 0.05 * sin($0 * 9) + 0.03 * $0 }
         s.cpu = 0.14
         s.cpuHistory = curve(60) { 0.10 + 0.08 * abs(sin($0 * 14)) + ($0 > 0.7 ? 0.25 * sin(($0 - 0.7) * 10) : 0) }

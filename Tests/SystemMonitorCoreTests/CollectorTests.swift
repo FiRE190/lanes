@@ -14,7 +14,10 @@ final class CollectorTests: XCTestCase {
         XCTAssertEqual(s.totalBytes, ProcessInfo.processInfo.physicalMemory)
         XCTAssertGreaterThan(s.usedBytes, 0)
         XCTAssertLessThanOrEqual(s.usedBytes, s.totalBytes)
-        XCTAssertEqual(s.usedBytes, s.appBytes + s.wiredBytes + s.compressedBytes)
+        // Activity Monitor's definition: total minus free minus file-backed cache.
+        XCTAssertEqual(s.usedBytes, s.totalBytes - s.freeBytes - s.fileBackedBytes)
+        XCTAssertGreaterThanOrEqual(s.usedBytes, s.appBytes + s.wiredBytes + s.compressedBytes)
+        XCTAssertEqual(s.usedBytes, s.appBytes + s.wiredBytes + s.compressedBytes + s.otherBytes)
         XCTAssertTrue((0...1).contains(s.usedFraction))
         XCTAssertTrue([.normal, .warning, .critical].contains(s.pressure))
     }
