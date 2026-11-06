@@ -37,8 +37,11 @@ public struct RAMSnapshot {
     /// speculative and kernel-reserved pages count as used too. Verified against Activity
     /// Monitor on 2026-11-05 (15.90 GB vs 15.90 GB).
     public var usedBytes: UInt64 {
-        totalBytes > freeBytes + fileBackedBytes ? totalBytes - freeBytes - fileBackedBytes
-                                                : appBytes + wiredBytes + compressedBytes
+        let parts = appBytes + wiredBytes + compressedBytes
+        guard totalBytes > freeBytes + fileBackedBytes else { return parts }
+        // Never below the sum of the parts (virtual machines can report less physical memory
+        // to the guest than the page counters add up to).
+        return max(totalBytes - freeBytes - fileBackedBytes, parts)
     }
 
     /// The part of "used" that is not app, wired or compressed (purgeable, speculative, reserved).
