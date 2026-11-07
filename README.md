@@ -1,5 +1,10 @@
 # Lanes
 
+[![build](https://github.com/jonathanbrantner/lanes/actions/workflows/build.yml/badge.svg)](https://github.com/jonathanbrantner/lanes/actions/workflows/build.yml)
+[![latest release](https://img.shields.io/github/v/release/jonathanbrantner/lanes)](https://github.com/jonathanbrantner/lanes/releases/latest)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-lightgrey)
+![license: MIT](https://img.shields.io/badge/license-MIT-blue)
+
 A tiny macOS menu bar monitor for memory and external SSD speed.
 
 Lanes shows how much memory is in use and how fast your external drives are reading and
@@ -35,7 +40,7 @@ separate read and write speeds, and stays out of the way.
 
 ### Download
 
-1. Get `Lanes-<version>.zip` from [Releases](../../releases).
+1. Get the latest `Lanes-<version>.zip` from [Releases](https://github.com/jonathanbrantner/lanes/releases/latest).
 2. Unzip and move `Lanes.app` to your Applications folder.
 3. The first time, right-click `Lanes.app` and choose **Open**, then **Open** again.
    macOS shows this warning because the app is not notarized (that needs a paid Apple
